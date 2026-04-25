@@ -312,8 +312,13 @@ function createPiece(team, role) {
 }
 
 
-function createGold(team) {
-    return { team, role: 'G' };
+function createGold(team, homeRow = null, homeCol = null) {
+    return { team, role: 'G', homeRow, homeCol };
+}
+
+
+function cloneCarriedGold(carrying = []) {
+    return carrying.map((entry) => ({ ...entry }));
 }
 
 
@@ -328,7 +333,9 @@ function cloneBoardState(state) {
         return {
             team: piece.team,
             role: piece.role,
-            carrying: piece.carrying ? [...piece.carrying] : []
+            carrying: cloneCarriedGold(piece.carrying),
+            homeRow: piece.homeRow ?? null,
+            homeCol: piece.homeCol ?? null
         };
     }));
 }
@@ -682,6 +689,9 @@ function renderBoard() {
             tile.className = 'tile';
             tile.dataset.r = row;
             tile.dataset.c = col;
+            if (!setupPhase && isReservedGoldHome(row, col)) {
+                tile.classList.add('gold-home');
+            }
             if (setupPhase) {
                 tile.classList.add(HOME_ROWS.blue(row) ? 'setup-blue' : 'setup-red');
                 tile.addEventListener('click', () => handleSetupTap(row, col));
@@ -768,6 +778,7 @@ function startMatch() {
     movesLeft = 0;
     lockedDir = null;
     goldHomePositions = captureGoldHomePositions();
+    assignGoldHomeMetadata();
     clearSelection();
     renderBoard();
     updateUI();
@@ -907,10 +918,10 @@ function defenderCanEnter(row, piece) {
 
 function secureGoldIfHome(piece, row) {
     if (!piece.carrying.length || !HOME_ROWS[piece.team](row)) return 0;
-    const delivered = piece.carrying.filter((owner) => owner !== piece.team);
+    const delivered = piece.carrying.filter((gold) => gold.owner !== piece.team);
     if (!delivered.length) return 0;
     securedGold[piece.team] += delivered.length;
-    piece.carrying = piece.carrying.filter((owner) => owner === piece.team);
+    piece.carrying = piece.carrying.filter((gold) => gold.owner === piece.team);
     return delivered.length;
 }
 
@@ -927,11 +938,28 @@ function captureGoldHomePositions() {
 }
 
 
-function placeGoldAtHome(owner) {
-    const preferredHomes = goldHomePositions[owner] || [];
+function assignGoldHomeMetadata() {
+    Object.entries(goldHomePositions).forEach(([team, positions]) => {
+        positions.forEach(({ row, col }) => {
+            const piece = getPieceAt(row, col);
+            if (piece?.role === 'G' && piece.team === team) {
+                piece.homeRow = row;
+                piece.homeCol = col;
+            }
+        });
+    });
+}
+
+
+function placeGoldAtHome(gold) {
+    const preferredHomes = [];
+    if (gold.homeRow !== null && gold.homeCol !== null) {
+        preferredHomes.push({ row: gold.homeRow, col: gold.homeCol });
+    }
+    preferredHomes.push(...(goldHomePositions[gold.owner] || []).filter((pos) => pos.row !== gold.homeRow || pos.col !== gold.homeCol));
     for (const { row, col } of preferredHomes) {
         if (!getPieceAt(row, col)) {
-            setPieceAt(row, col, createGold(owner));
+            setPieceAt(row, col, createGold(gold.owner, row, col));
             return;
         }
     }
@@ -939,8 +967,8 @@ function placeGoldAtHome(owner) {
 
     for (let row = 0; row < BOARD_SIZE; row++) {
         for (let col = 0; col < BOARD_SIZE; col++) {
-            if (HOME_ROWS[owner](row) && !getPieceAt(row, col)) {
-                setPieceAt(row, col, createGold(owner));
+            if (HOME_ROWS[gold.owner](row) && !getPieceAt(row, col)) {
+                setPieceAt(row, col, createGold(gold.owner, gold.homeRow, gold.homeCol));
                 return;
             }
         }
@@ -950,7 +978,7 @@ function placeGoldAtHome(owner) {
     for (let row = 0; row < BOARD_SIZE; row++) {
         for (let col = 0; col < BOARD_SIZE; col++) {
             if (!getPieceAt(row, col)) {
-                setPieceAt(row, col, createGold(owner));
+                setPieceAt(row, col, createGold(gold.owner, gold.homeRow, gold.homeCol));
                 return;
             }
         }
@@ -963,24 +991,8 @@ function isReservedGoldHome(row, col) {
 }
 
 
-function respawnCarriedGold(ownerList, row, col) {
-    ownerList.forEach((owner) => {
-        if (!getPieceAt(row, col)) {
-            setPieceAt(row, col, createGold(owner));
-            return;
-        }
-        for (let r = 0; r < BOARD_SIZE; r++) {
-            let placed = false;
-            for (let c = 0; c < BOARD_SIZE; c++) {
-                if (!getPieceAt(r, c)) {
-                    setPieceAt(r, c, createGold(owner));
-                    placed = true;
-                    break;
-                }
-            }
-            if (placed) return;
-        }
-    });
+function respawnCarriedGold(goldList) {
+    goldList.forEach((gold) => placeGoldAtHome(gold));
 }
 
 
@@ -1104,7 +1116,13 @@ function movePiece(fromRow, fromCol, toRow, toCol) {
                 resetTurnFromSnapshot(`${piece.role === 'D' ? 'Defenders' : 'Villagers'} cannot take gold. Turn reset.`);
                 return;
             }
-            gold.push({ row, col, owner: occupant.team });
+            gold.push({
+                row,
+                col,
+                owner: occupant.team,
+                homeRow: occupant.homeRow ?? row,
+                homeCol: occupant.homeCol ?? col
+            });
             continue;
         }
         if (!canCapture(piece)) {
@@ -1126,18 +1144,22 @@ function movePiece(fromRow, fromCol, toRow, toCol) {
             if (captured.role === 'A') {
                 attackerGoldToRestore.push(...captured.carrying);
             } else {
-                droppedGoldToRespawn.push({ ownerList: [...captured.carrying], row, col });
+                droppedGoldToRespawn.push({ goldList: cloneCarriedGold(captured.carrying) });
             }
         }
         setPieceAt(row, col, null);
     });
-    gold.forEach(({ row, col, owner }) => {
-        piece.carrying.push(owner);
+    gold.forEach(({ row, col, owner, homeRow, homeCol }) => {
+        piece.carrying.push({
+            owner,
+            homeRow,
+            homeCol
+        });
         setPieceAt(row, col, null);
     });
     setPieceAt(toRow, toCol, piece);
-    attackerGoldToRestore.forEach((owner) => placeGoldAtHome(owner));
-    droppedGoldToRespawn.forEach(({ ownerList, row, col }) => respawnCarriedGold(ownerList, row, col));
+    attackerGoldToRestore.forEach((goldEntry) => placeGoldAtHome(goldEntry));
+    droppedGoldToRespawn.forEach(({ goldList }) => respawnCarriedGold(goldList));
     movesLeft -= distance;
     selectedPos = { row: toRow, col: toCol };
     lockedDir = direction;
@@ -1267,7 +1289,13 @@ function getLegalMovesForPiece(row, col, piece, maxDistance) {
                         blocked = true;
                         break;
                     }
-                    gold.push({ row: nextRow, col: nextCol, owner: occupant.team });
+                    gold.push({
+                        row: nextRow,
+                        col: nextCol,
+                        owner: occupant.team,
+                        homeRow: occupant.homeRow ?? nextRow,
+                        homeCol: occupant.homeCol ?? nextCol
+                    });
                     continue;
                 }
 
@@ -1286,9 +1314,13 @@ function getLegalMovesForPiece(row, col, piece, maxDistance) {
             if (!getPieceAt(toRow, toCol) && isReservedGoldHome(toRow, toCol)) continue;
 
 
-            const carryingAfterMove = (piece.carrying || []).concat(gold.map((entry) => entry.owner));
+            const carryingAfterMove = (piece.carrying || []).concat(gold.map((entry) => ({
+                owner: entry.owner,
+                homeRow: entry.homeRow,
+                homeCol: entry.homeCol
+            })));
             if (carryingAfterMove.length && HOME_ROWS[piece.team](toRow)) {
-                delivered = carryingAfterMove.filter((owner) => owner !== piece.team).length;
+                delivered = carryingAfterMove.filter((goldEntry) => goldEntry.owner !== piece.team).length;
             }
 
 
