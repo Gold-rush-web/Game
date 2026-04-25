@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="en">
+
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gold Rush | Strategic Frontline</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800;900&family=Manrope:wght@400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+</head>
+
+
+<body>
+    <div id="loading-screen" class="loading-screen" aria-live="polite">
+        <div class="loading-screen__panel">
+            <div class="loading-screen__crest">GR</div>
+            <p class="loading-screen__eyebrow">Preparing The Mine</p>
+            <h1 class="loading-screen__title">Loading Assets</h1>
+            <p id="loading-status" class="loading-screen__text">Gathering the board, soundtrack, and frontier visuals.</p>
+            <div class="loading-screen__bar">
+                <span class="loading-screen__bar-fill"></span>
+            </div>
+        </div>
+    </div>
+
+
+    <div class="animated-bg" aria-hidden="true">
+        <div class="animated-bg__aurora animated-bg__aurora--gold"></div>
+        <div class="animated-bg__aurora animated-bg__aurora--blue"></div>
+        <div class="animated-bg__dust"></div>
+    </div>
+
+
+    <div id="start-screen" class="start-screen">
+        <div class="start-screen__backdrop"></div>
+        <div class="start-screen__panel">
+            <p class="start-screen__eyebrow">High Stakes Tactical Showdown</p>
+            <div class="start-screen__crest">GR</div>
+            <h1>Gold Rush</h1>
+            <p class="start-screen__lead">Lead your crew across hostile ground, steal enemy gold, and get it safely back
+                across the line.</p>
+            <div class="start-screen__features">
+                <div class="start-feature">
+                    <span class="start-feature__label">Objective</span>
+                    <strong>Secure 4 enemy gold bars</strong>
+                </div>
+                <div class="start-feature">
+                    <span class="start-feature__label">Style</span>
+                    <strong>Dice-fueled strategy duel</strong>
+                </div>
+                <div class="start-feature">
+                    <span class="start-feature__label">Format</span>
+                    <strong>Custom setup, 2 factions</strong>
+                </div>
+            </div>
+            <div class="start-screen__actions">
+                <button id="enter-game-btn" class="start-primary-btn" type="button">Enter The Mine</button>
+                <button id="start-rules-btn" class="start-secondary-btn" type="button">Read Field Manual</button>
+            </div>
+            <p class="start-screen__hint">Best experienced with soundtrack on.</p>
+        </div>
+    </div>
+
+
+    <nav class="navbar">
+        <a class="logo logo-link" href="https://chatgpt.com" target="_blank" rel="noopener noreferrer"
+            aria-label="Open ChatGPT website">
+            <span class="logo-mark">GR</span>
+            <div class="logo-copy">
+                <span class="logo-title">Gold Rush</span>
+                <span class="logo-subtitle">Strategic Frontline</span>
+            </div>
+        </a>
+        <div class="nav-audio">
+            <span class="nav-audio-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" focusable="false" aria-hidden="true">
+                    <path d="M16 3v11.55a4 4 0 1 1-2-3.46V7.2l-6 1.5v8.85a4 4 0 1 1-2-3.46V6.64L16 3Z"
+                        fill="currentColor" />
+                </svg>
+            </span>
+            <span id="track-status" class="track-status nav-track-status">Loading soundtrack...</span>
+            <div class="music-controls">
+                <button id="music-toggle" class="music-btn icon-btn" type="button" aria-label="Pause music"
+                    title="Pause music">
+                    <svg viewBox="0 0 24 24" focusable="false" aria-hidden="true">
+                        <path d="M7 5h3v14H7zM14 5h3v14h-3z" fill="currentColor" />
+                    </svg>
+                </button>
+                <button id="music-next" class="music-btn icon-btn" type="button" aria-label="Next track"
+                    title="Next track">
+                    <svg viewBox="0 0 24 24" focusable="false" aria-hidden="true">
+                        <path d="M5 5.5v13l9-6.5-9-6.5Zm10 0h2v13h-2z" fill="currentColor" />
+                    </svg>
+                </button>
+            </div>
+        </div>
+        <div class="nav-links">
+            <a href="#" id="open-rules">FIELD MANUAL</a>
+            <a href="#" id="open-credits">CREDITS</a>
+            <a href="https://discord.gg/ajvnxf9m" target="_blank" rel="noopener noreferrer" class="discord-link">
+                <i class="fa-brands fa-discord" aria-hidden="true"></i>
+            </a>
+        </div>
+    </nav>
+
+
+    <main class="game-arena">
+        <div class="game-container">
+            <section class="arena-banner">
+                <div class="arena-copy">
+                    <p class="arena-eyebrow">Frontier Command Table</p>
+                    <h1>Claim the gold. Hold the line.</h1>
+                    <p class="arena-description">A cinematic command board for tense gold raids, defensive stands, and
+                        high-risk returns across the frontier.</p>
+                </div>
+            </section>
+            <div class="game-header">
+                <div class="dice-scene">
+                    <div id="dice" class="cube">
+                        <div class="face front">1</div>
+                        <div class="face back">6</div>
+                        <div class="face right">3</div>
+                        <div class="face left">4</div>
+                        <div class="face top">2</div>
+                        <div class="face bottom">5</div>
+                    </div>
+                </div>
+                <div id="turn-indicator">BLUE'S TURN</div>
+                <button id="roll-btn">ROLL DICE</button>
+            </div>
+
+
+            <section id="setup-panel" class="setup-panel">
+                <div class="setup-topline">
+                    <div id="setup-title" class="setup-title">BOARD SETUP</div>
+                    <div id="setup-hint" class="setup-hint">Drag or tap pieces from the trays onto the board. Team pieces stay
+                        on their own half, gold can go anywhere.</div>
+                </div>
+                <div class="setup-controls">
+                    <div class="setup-options">
+                        <label class="setup-toggle" for="bot-enabled">
+                            <input id="bot-enabled" type="checkbox" checked>
+                            <span class="setup-toggle__track">
+                                <span class="setup-toggle__thumb"></span>
+                            </span>
+                            <span class="setup-toggle__copy">
+                                <span class="setup-toggle__label">Enable Bot</span>
+                                <span class="setup-toggle__hint">Auto-builds the red side and plays it for you.</span>
+                            </span>
+                        </label>
+                        <label class="setup-select" for="bot-difficulty">
+                            <span class="setup-select__label">Bot Difficulty</span>
+                            <select id="bot-difficulty">
+                                <option value="easy">Easy</option>
+                                <option value="normal" selected>Normal</option>
+                                <option value="hard">Hard</option>
+                            </select>
+                        </label>
+                    </div>
+                    <div class="setup-trays">
+                        <div class="setup-tray-block">
+                            <div class="setup-tray-title blue-side">Blue Tray</div>
+                            <div id="blue-tray" class="setup-tray"></div>
+                        </div>
+                        <div class="setup-tray-block">
+                            <div class="setup-tray-title red-side">Red Tray</div>
+                            <div id="red-tray" class="setup-tray"></div>
+                        </div>
+                    </div>
+                    <div class="setup-actions">
+                        <button id="clear-setup-btn" type="button" class="setup-action secondary-action">Clear
+                            Board</button>
+                        <button id="default-setup-btn" type="button" class="setup-action secondary-action">Load
+                            Default</button>
+                        <button id="start-game-btn" type="button" class="setup-action">Start Match</button>
+                    </div>
+                </div>
+                <div id="setup-counts" class="setup-counts"></div>
+            </section>
+
+
+            <div id="board" class="main-grid">
+                <div class="mid-line"></div>
+                <div id="endgame-overlay" class="endgame-overlay" hidden>
+                    <div class="endgame-overlay__panel">
+                        <div class="endgame-overlay__eyebrow">Final Tally</div>
+                        <h2 id="endgame-title" class="endgame-overlay__title">Victory</h2>
+                        <p id="endgame-text" class="endgame-overlay__text"></p>
+                    </div>
+                </div>
+            </div>
+
+
+            <div id="status" class="status-msg">Awaiting orders, Commander.</div>
+        </div>
+    </main>
+
+
+    <audio id="bg-music" preload="auto"></audio>
+
+
+    <div id="rules-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="rules-title" hidden>
+        <div class="modal-content" tabindex="-1">
+            <div class="modal-header">
+                <div>
+                    <p class="manual-eyebrow">Strategic Frontline Briefing</p>
+                    <h2 id="rules-title">FIELD MANUAL</h2>
+                </div>
+                <button type="button" class="close-rules" aria-label="Close field manual">&times;</button>
+            </div>
+            <div class="modal-body">
+                <section class="manual-hero">
+                    <div>
+                        <p class="manual-kicker">Mission Objective</p>
+                        <h3>Seize enemy gold and bring it home.</h3>
+                        <p>Capture the opposing team's gold bars and return them safely to your side of the board while
+                            protecting your attackers.</p>
+                    </div>
+                    <div class="manual-stat-grid">
+                        <div class="manual-stat">
+                            <span class="stat-value">2</span>
+                            <span class="stat-label">Attackers</span>
+                        </div>
+                        <div class="manual-stat">
+                            <span class="stat-value">2</span>
+                            <span class="stat-label">Defenders</span>
+                        </div>
+                        <div class="manual-stat">
+                            <span class="stat-value">3</span>
+                            <span class="stat-label">Villagers</span>
+                        </div>
+                        <div class="manual-stat">
+                            <span class="stat-value">1</span>
+                            <span class="stat-label">Team Captain</span>
+                        </div>
+                    </div>
+                </section>
+
+
+                <section class="manual-section">
+                    <h3>Core Rules</h3>
+                    <ul class="manual-list">
+                        <li>Any piece can move in any direction.</li>
+                        <li>Rolling the die determines how many spaces you move this turn.</li>
+                        <li>Each piece must keep moving in the same direction for the whole turn.</li>
+                        <li>To capture a piece or take a gold bar, your piece must overlap that piece.</li>
+                        <li>When any piece is captured, it leaves the game and does not return to its starting position.
+                        </li>
+                    </ul>
+                </section>
+
+
+                <section class="manual-grid">
+                    <article class="manual-card">
+                        <h3>Unit Roles</h3>
+                        <ul class="manual-list">
+                            <li><strong>Attacker (A):</strong> Can pick up gold bars but cannot capture enemy pieces.
+                            </li>
+                            <li><strong>Defender (D):</strong> Can capture enemy pieces, cannot pick up gold, and cannot
+                                cross the middle line.</li>
+                            <li><strong>Villager (V):</strong> Can attack and defend, but cannot take gold.</li>
+                            <li><strong>Captain (C):</strong> A chosen villager that can both capture enemies and carry
+                                gold.</li>
+                        </ul>
+                    </article>
+
+
+                    <article class="manual-card">
+                        <h3>Gold & Captures</h3>
+                        <ul class="manual-list">
+                            <li>If an attacker or captain overlaps a gold bar, that piece picks up the gold.</li>
+                            <li>Attackers cannot capture players. If they pass over an enemy piece, nothing happens.
+                            </li>
+                            <li>Defenders and villagers capture every enemy piece they pass over in their path.</li>
+                            <li>Defenders cannot pick up gold.</li>
+                        </ul>
+                    </article>
+                </section>
+
+
+                <section class="manual-grid">
+                    <article class="manual-card">
+                        <h3>Victory Conditions</h3>
+                        <ul class="manual-list">
+                            <li>Win by getting all 4 gold bars from the other team.</li>
+                        </ul>
+                    </article>
+
+
+                    <article class="manual-card">
+                        <h3>Setup Notes</h3>
+                        <ul class="manual-list">
+                            <li>Players can place their own starting board before the game begins.</li>
+                            <li>Each side must place 2 attackers, 2 defenders, 3 villagers, 1 captain, and 4 gold bars
+                                before the match begins. Team pieces stay on their own half, while gold bars can be
+                                placed on any open square.</li>
+                            <li>The match starts only after both sides have placed all of their pieces.</li>
+                        </ul>
+                    </article>
+                </section>
+
+
+                <section class="manual-section">
+                    <h3>Board Key</h3>
+                    <div class="manual-key-grid">
+                        <div class="key-item"><span class="key-token blue-token">A</span><span>Attacker</span></div>
+                        <div class="key-item"><span class="key-token blue-token">D</span><span>Defender</span></div>
+                        <div class="key-item"><span class="key-token blue-token">V</span><span>Villager</span></div>
+                        <div class="key-item"><span class="key-token blue-token captain-token">C</span><span>Team
+                                Captain</span></div>
+                        <div class="key-item"><span class="key-token gold-token">G</span><span>Gold Bar</span></div>
+                        <div class="key-item"><span class="key-swatch blue-swatch"></span><span>Blue pieces: one
+                                team</span></div>
+                        <div class="key-item"><span class="key-swatch red-swatch"></span><span>Red pieces: the other
+                                team</span></div>
+                        <div class="key-item"><span class="key-swatch gold-swatch"></span><span>Gold squares: gold
+                                bars</span></div>
+                        <div class="key-item"><span class="key-swatch line-swatch"></span><span>Gold line: middle
+                                divider</span></div>
+                    </div>
+                </section>
+            </div>
+        </div>
+    </div>
+
+
+    <div id="credits-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="credits-title" hidden>
+        <div class="modal-content credits-modal-content" tabindex="-1">
+            <div class="modal-header">
+                <div>
+                    <p class="manual-eyebrow">Frontier Credits</p>
+                    <h2 id="credits-title">CREDITS</h2>
+                </div>
+                <button type="button" class="close-credits" aria-label="Close credits">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="credits-card credits-card--modal">
+                    <div class="credits-grid">
+                        <article class="credit-item">
+                            <span class="credit-label">Music</span>
+                            <a class="credit-value credit-link" href="https://www.google.com/search?q=Sleep+Volume"
+                                target="_blank" rel="noopener noreferrer">Sleep Volume</a>
+                        </article>
+                        <article class="credit-item">
+                            <span class="credit-label">Coding</span>
+                            <a class="credit-value credit-link" href="https://discord.com/users/1424192190023733248"
+                                target="_blank" rel="noopener noreferrer">@GetBetter</a>
+                        </article>
+                        <article class="credit-item">
+                            <span class="credit-label">Game Idea</span>
+                            <a class="credit-value credit-link" href="https://discord.com/users/1437209073551675482"
+                                target="_blank" rel="noopener noreferrer">@Oxygen</a>
+                        </article>
+                    </div>
+                    <p class="credits-botline">
+                        Bot powered by
+                        <a class="chatgpt-lockup" href="https://chatgpt.com" target="_blank"
+                            rel="noopener noreferrer" aria-label="Open ChatGPT website">
+                            <span class="chatgpt-logo" aria-hidden="true">
+                                <svg viewBox="0 0 24 24" 3focusable="false" aria-hidden="true">
+                                    <g fill="none" stroke="currentColor" stroke-linecap="round"
+                                        stroke-linejoin="round" stroke-width="1.65">
+                                        <path d="M12 4.1 15.8 6.3V10.7L12 12.9 8.2 10.7V6.3L12 4.1Z" />
+                                        <path d="M15.8 6.3 19.1 8.2V12.6L15.8 14.5 12 12.3V7.9L15.8 6.3Z" />
+                                        <path d="M15.8 14.5V18.1L12 20.3 8.2 18.1V13.7L12 11.5 15.8 14.5Z" />
+                                        <path d="M8.2 18.1 4.9 16.2V11.8L8.2 9.9 12 12.1V16.5L8.2 18.1Z" />
+                                        <path d="M8.2 9.9V6.3L12 4.1 15.8 6.3V10.7L12 12.9 8.2 9.9Z" />
+                                        <path d="M19.1 12.6 15.8 14.5 12 12.3V7.9L15.8 6.3 19.1 8.2V12.6Z" />
+                                    </g>
+                                </svg>
+                            </span>
+                            <span>ChatGPT</span>
+                        </a>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <script src="script.js"></script>
+</body>
+
+
+</html>
