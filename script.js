@@ -66,6 +66,8 @@ let botThinking = false;
 let botEnabled = true;
 let botDifficulty = 'normal';
 let loadingComplete = false;
+let transientBoardEffects = { movedTo: null, captures: [] };
+let transientBoardEffectTimer = null;
 
 
 const loadingScreen = document.getElementById('loading-screen');
@@ -307,6 +309,90 @@ document.addEventListener('click', tryStartMusic, { once: true });
 document.addEventListener('keydown', tryStartMusic, { once: true });
 
 
+function getRoleLabel(role) {
+    return {
+        A: 'Attacker',
+        D: 'Defender',
+        V: 'Villager',
+        C: 'Captain',
+        G: 'Gold'
+    }[role] || role;
+}
+
+
+function getPieceTokenMarkup(team, role) {
+    if (role === 'G') {
+        return `
+            <span class="gold-stack" aria-hidden="true">
+                <span class="gold-stack__glow"></span>
+                <span class="gold-stack__cart">
+                    <span class="gold-stack__ore"></span>
+                    <span class="gold-stack__ore gold-stack__ore--rear"></span>
+                    <span class="gold-stack__wheel gold-stack__wheel--left"></span>
+                    <span class="gold-stack__wheel gold-stack__wheel--right"></span>
+                </span>
+            </span>
+        `;
+    }
+
+
+    return `
+        <span class="piece-avatar" aria-hidden="true">
+            <span class="piece-base"></span>
+            <span class="piece-tool"></span>
+            <span class="piece-hat"></span>
+            <span class="piece-face">
+                <span class="piece-eyes"></span>
+                <span class="piece-smile"></span>
+            </span>
+            <span class="piece-beard"></span>
+            <span class="piece-arms"></span>
+            <span class="piece-body"></span>
+            <span class="piece-feet">
+                <span></span>
+                <span></span>
+            </span>
+            <span class="piece-role-badge">${role}</span>
+        </span>
+    `;
+}
+
+
+function clearTransientBoardEffects(shouldRefresh = true) {
+    if (transientBoardEffectTimer) {
+        clearTimeout(transientBoardEffectTimer);
+        transientBoardEffectTimer = null;
+    }
+    transientBoardEffects = { movedTo: null, captures: [] };
+    if (!shouldRefresh || setupPhase) return;
+    renderBoard();
+    highlightSelectedTile();
+    updateUI();
+}
+
+
+function scheduleTransientBoardEffects(movedTo = null, captures = []) {
+    transientBoardEffects = {
+        movedTo,
+        captures: captures.map(({ row, col }) => ({ row, col }))
+    };
+    if (transientBoardEffectTimer) clearTimeout(transientBoardEffectTimer);
+    transientBoardEffectTimer = setTimeout(() => {
+        clearTransientBoardEffects();
+    }, 720);
+}
+
+
+function isTransientMoveTile(row, col) {
+    return transientBoardEffects.movedTo?.row === row && transientBoardEffects.movedTo?.col === col;
+}
+
+
+function isTransientCaptureTile(row, col) {
+    return transientBoardEffects.captures.some((entry) => entry.row === row && entry.col === col);
+}
+
+
 function createPiece(team, role) {
     return { team, role, carrying: [] };
 }
@@ -445,14 +531,15 @@ function renderTrays() {
             for (let index = 0; index < remaining; index++) {
                 const token = document.createElement('button');
                 token.type = 'button';
-                token.className = `setup-token ${role === 'G' ? 'gold' : team}`;
+                token.className = `setup-token ${role === 'G' ? 'gold' : team} role-${role}`;
                 if (setupSelection?.source === 'tray' && setupSelection.team === team && setupSelection.role === role && index === 0) {
                     token.classList.add('selected');
                 }
-                token.innerText = role;
+                token.textContent = role;
                 token.draggable = true;
                 token.dataset.team = team;
                 token.dataset.role = role;
+                token.setAttribute('aria-label', `${team} ${getRoleLabel(role)}`);
                 token.addEventListener('dragstart', (event) => handleTrayDragStart(event, team, role));
                 token.addEventListener('dragend', clearDropHints);
                 token.addEventListener('click', () => selectSetupTrayToken(team, role));
@@ -621,6 +708,7 @@ function resetTurnFromSnapshot(message) {
     currentPlayer = turnSnapshot.currentPlayer;
     movesLeft = 0;
     lockedDir = null;
+    clearTransientBoardEffects(false);
     clearSelection();
     renderBoard();
     updateUI();
@@ -706,11 +794,25 @@ function renderBoard() {
             }
 
 
+            if (isTransientCaptureTile(row, col)) {
+                tile.classList.add('tile--capture');
+                const burst = document.createElement('div');
+                burst.className = 'tile-burst';
+                tile.appendChild(burst);
+            }
+
+
             const piece = getPieceAt(row, col);
             if (piece) {
                 const token = document.createElement('div');
                 token.className = `piece ${piece.team} ${piece.role}`;
-                token.innerText = piece.role;
+                token.textContent = piece.role;
+                token.dataset.team = piece.team;
+                token.dataset.role = piece.role;
+                token.setAttribute('aria-label', `${piece.team} ${getRoleLabel(piece.role)}`);
+                if (isTransientMoveTile(row, col)) {
+                    token.classList.add('piece--walking');
+                }
                 if (piece.carrying?.length > 0) {
                     token.classList.add('carrying');
                     token.dataset.carrying = `${piece.carrying.length}`;
@@ -734,6 +836,7 @@ function loadDefaultSetup() {
     lockedDir = null;
     clearSetupSelection();
     currentPlayer = 'blue';
+    clearTransientBoardEffects(false);
     hideEndgameOverlay();
     DEFAULT_LAYOUT.forEach(({ row, col, team, role }) => {
         setPieceAt(row, col, role === 'G' ? createGold(team) : createPiece(team, role));
@@ -755,6 +858,7 @@ function clearBoardForSetup() {
     lockedDir = null;
     clearSetupSelection();
     currentPlayer = 'blue';
+    clearTransientBoardEffects(false);
     hideEndgameOverlay();
     clearSelection();
     renderBoard();
@@ -774,6 +878,7 @@ function startMatch() {
     gameOver = false;
     dragState = null;
     clearSetupSelection();
+    clearTransientBoardEffects(false);
     currentPlayer = 'blue';
     movesLeft = 0;
     lockedDir = null;
@@ -1164,6 +1269,7 @@ function movePiece(fromRow, fromCol, toRow, toCol) {
     selectedPos = { row: toRow, col: toCol };
     lockedDir = direction;
     const delivered = secureGoldIfHome(piece, toRow);
+    scheduleTransientBoardEffects({ row: toRow, col: toCol }, captures.map(({ row, col }) => ({ row, col })));
 
 
     renderBoard();
@@ -1478,3 +1584,13 @@ document.addEventListener('keydown', (event) => {
 
 initBoard();
 updateMusicControls();
+
+
+
+
+
+
+
+
+
+
