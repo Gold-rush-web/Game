@@ -110,6 +110,33 @@ const enterGameBtn = document.getElementById('enter-game-btn');
 const startRulesBtn = document.getElementById('start-rules-btn');
 
 
+let statusToastTimer = null;
+
+
+function showStatusToast() {
+    if (!statusMsg) return;
+    statusMsg.classList.remove('is-visible');
+    void statusMsg.offsetWidth;
+    statusMsg.classList.add('is-visible');
+    if (statusToastTimer) clearTimeout(statusToastTimer);
+    statusToastTimer = setTimeout(() => {
+        statusMsg.classList.remove('is-visible');
+    }, 3600);
+}
+
+
+if (statusMsg) {
+    const statusObserver = new MutationObserver(() => {
+        if (statusMsg.innerText.trim()) showStatusToast();
+    });
+    statusObserver.observe(statusMsg, {
+        childList: true,
+        subtree: true,
+        characterData: true
+    });
+}
+
+
 const playlist = ['2.mp3', '3.mp3', '4.mp3', '5.mp3'];
 let currentTrackIndex = -1;
 let musicStarted = false;
@@ -1584,6 +1611,8 @@ document.addEventListener('keydown', (event) => {
 
 initBoard();
 updateMusicControls();
+
+
 
 
 
