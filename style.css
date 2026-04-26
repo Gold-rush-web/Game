@@ -1773,10 +1773,13 @@ body.intro-active .status-msg {
 }
 
 
-.chatgpt-logo svg {
+.chatgpt-logo svg,
+.chatgpt-logo i {
     width: 16px;
     height: 16px;
     display: block;
+    font-size: 16px;
+    line-height: 1;
 }
 
 
@@ -3230,4 +3233,5 @@ body.intro-active .status-msg {
     justify-content: center !important;
     box-shadow: none !important;
 }
+
 
