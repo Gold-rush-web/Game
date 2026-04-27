@@ -1611,15 +1611,3 @@ document.addEventListener('keydown', (event) => {
 
 initBoard();
 updateMusicControls();
-
-
-
-
-
-
-
-
-
-
-
-
