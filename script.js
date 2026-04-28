@@ -1608,6 +1608,23 @@ document.addEventListener('keydown', (event) => {
     }
 });
 
+/* --- TOUCH RESPONSIVENESS --- */
+
+// Prevent background scrolling while interacting with the board on mobile
+board.addEventListener('touchmove', function(e) {
+    if (dragState || setupSelection) {
+        e.preventDefault();
+    }
+}, { passive: false });
+
+// Refresh UI layout if orientation changes or window is resized
+window.addEventListener('resize', () => {
+    if (!introActive && !gameOver) {
+        // You can call your existing updateUI here if specific 
+        // JS-calculated positions need to be recalculated
+        updateUI();
+    }
+});
 
 initBoard();
 updateMusicControls();
